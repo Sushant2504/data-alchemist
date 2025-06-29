@@ -71,4 +71,6 @@ export interface ExportData {
   prioritizationWeights: PrioritizationWeights;
   validationResults: ValidationResult[];
   timestamp: string;
-} 
+}
+
+export type { AISuggestion } from './validation'; 

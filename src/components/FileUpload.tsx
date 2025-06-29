@@ -37,13 +37,21 @@ export default function FileUpload({ onValidationComplete }: FileUploadProps) {
     }
 
     for (const file of filteredFiles) {
-      const fileInfo = {
+      const fileInfo: {
+        name: string;
+        type: string;
+        entityType: 'clients' | 'workers' | 'tasks' | 'unknown';
+        data: any[];
+        headers: string[];
+        status: 'uploading' | 'processing' | 'success' | 'error';
+        error?: string;
+      } = {
         name: file.name,
         type: file.type,
-        entityType: 'unknown' as const,
+        entityType: 'unknown',
         data: [],
         headers: [],
-        status: 'uploading' as const,
+        status: 'uploading',
       };
 
       newFiles.push(fileInfo);
@@ -70,21 +78,25 @@ export default function FileUpload({ onValidationComplete }: FileUploadProps) {
         const entityType = detectEntityType(parsedData.headers);
         fileInfo.entityType = entityType;
 
-        // Transform data with AI header mapping
-        const transformedData = transformData(parsedData.data, entityType);
-        fileInfo.data = transformedData;
-        fileInfo.headers = parsedData.headers;
-        fileInfo.status = 'success';
+        // Transform data with AI header mapping only for valid entity types
+        if (entityType === 'clients' || entityType === 'workers' || entityType === 'tasks') {
+          const transformedData = transformData(parsedData.data, entityType);
+          fileInfo.data = transformedData;
+          fileInfo.headers = parsedData.headers;
+          fileInfo.status = 'success';
 
-        // Store data in global state
-        if (entityType === 'clients') {
-          useDataStore.getState().setClients(transformedData as Client[]);
-        } else if (entityType === 'workers') {
-          useDataStore.getState().setWorkers(transformedData as Worker[]);
-        } else if (entityType === 'tasks') {
-          useDataStore.getState().setTasks(transformedData as Task[]);
+          // Store data in global state
+          if (entityType === 'clients') {
+            useDataStore.getState().setClients(transformedData as Client[]);
+          } else if (entityType === 'workers') {
+            useDataStore.getState().setWorkers(transformedData as Worker[]);
+          } else if (entityType === 'tasks') {
+            useDataStore.getState().setTasks(transformedData as Task[]);
+          }
+        } else {
+          fileInfo.status = 'error';
+          fileInfo.error = 'Unrecognized file type. Please upload a valid clients, workers, or tasks file.';
         }
-
         setUploadedFiles(prev => [...prev]);
       } catch (error) {
         fileInfo.status = 'error';
