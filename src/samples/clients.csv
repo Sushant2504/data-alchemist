@@ -1,0 +1,11 @@
+ClientID,ClientName,PriorityLevel,RequestedTaskIDs,GroupTag,AttributesJSON
+C001,Acme Corp,5,T001,T002,T003,Premium,{"industry": "technology", "contractValue": 50000}
+C002,Global Solutions,3,T004,T005,Standard,{"industry": "consulting", "contractValue": 25000}
+C003,StartupXYZ,4,T001,T006,Premium,{"industry": "startup", "contractValue": 15000}
+C004,Enterprise Inc,2,T007,T008,Standard,{"industry": "enterprise", "contractValue": 75000}
+C005,SmallBiz Co,1,T009,Basic,{"industry": "retail", "contractValue": 5000}
+C006,TechGiant,5,T002,T003,T010,Premium,{"industry": "technology", "contractValue": 100000}
+C007,Consulting Pro,3,T005,T011,Standard,{"industry": "consulting", "contractValue": 30000}
+C008,Innovation Labs,4,T001,T012,Premium,{"industry": "research", "contractValue": 45000}
+C009,Local Business,2,T013,Basic,{"industry": "local", "contractValue": 8000}
+C010,Corporate Client,5,T014,T015,T016,Premium,{"industry": "corporate", "contractValue": 120000} 

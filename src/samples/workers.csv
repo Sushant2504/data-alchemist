@@ -1,0 +1,16 @@
+WorkerID,WorkerName,Skills,AvailableSlots,MaxLoadPerPhase,WorkerGroup,QualificationLevel
+W001,John Smith,"JavaScript,React,Node.js","[1,2,3,4,5]",3,Developers,5
+W002,Sarah Johnson,"Python,Django,Data Analysis","[1,2,3]",2,Data Scientists,4
+W003,Mike Wilson,"Java,Spring,Microservices","[2,3,4,5]",2,Developers,4
+W004,Emily Davis,"UI/UX,Design,Prototyping","[1,2,4,5]",2,Designers,3
+W005,David Brown,"DevOps,AWS,Docker","[1,3,5]",1,DevOps,5
+W006,Lisa Chen,"JavaScript,Angular,TypeScript","[2,3,4]",2,Developers,4
+W007,Tom Anderson,"Python,Machine Learning,TensorFlow","[1,2,4]",1,Data Scientists,5
+W008,Jessica Lee,"UI/UX,Sketch,Figma","[1,3,4,5]",2,Designers,4
+W009,Alex Rodriguez,"Java,Kotlin,Android","[1,2,3,4,5]",3,Developers,3
+W010,Rachel Green,"Data Analysis,SQL,Tableau","[2,3,4,5]",2,Data Scientists,4
+W011,Chris Martin,"DevOps,Kubernetes,CI/CD","[1,2,4]",1,DevOps,4
+W012,Amanda White,"JavaScript,Vue.js,Frontend","[1,2,3,5]",2,Developers,3
+W013,Mark Thompson,"Python,Data Science,Pandas","[1,3,4,5]",2,Data Scientists,4
+W014,Sophie Kim,"UI/UX,Adobe Creative Suite","[2,3,4]",1,Designers,3
+W015,James Wilson,"Java,Spring Boot,Backend","[1,2,4,5]",2,Developers,4 

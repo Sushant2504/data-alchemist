@@ -1,0 +1,17 @@
+TaskID,TaskName,Category,Duration,RequiredSkills,PreferredPhases,MaxConcurrent
+T001,Frontend Development,Development,3,"JavaScript,React","1-3",2
+T002,Backend API Development,Development,4,"Java,Spring,Microservices","2-4",1
+T003,Database Design,Development,2,"SQL,Database Design","1-2",1
+T004,UI/UX Design,Design,2,"UI/UX,Design,Prototyping","1-3",2
+T005,Data Analysis,Data Science,3,"Python,Data Analysis,SQL","2-4",2
+T006,Mobile App Development,Development,5,"Java,Kotlin,Android","1-5",1
+T007,DevOps Setup,Infrastructure,2,"DevOps,AWS,Docker","1-2",1
+T008,Testing & QA,Quality Assurance,2,"Testing,QA,Automation","3-4",3
+T009,Documentation,Content,1,"Technical Writing,Documentation","1-5",5
+T010,Machine Learning Model,Data Science,4,"Python,Machine Learning,TensorFlow","2-5",1
+T011,Performance Optimization,Development,2,"Performance,Optimization,Monitoring","3-4",2
+T012,Security Audit,Security,3,"Security,Audit,Compliance","1-3",1
+T013,User Training,Training,1,"Training,Communication,Documentation","4-5",3
+T014,System Integration,Development,3,"Integration,API,Microservices","2-4",1
+T015,Cloud Migration,Infrastructure,4,"Cloud,AWS,Migration","1-4",1
+T016,Data Migration,Data Science,3,"Data Migration,ETL,SQL","2-4",2 
