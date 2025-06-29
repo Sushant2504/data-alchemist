@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Search, Edit3, Save, X, Sparkles, Filter } from 'lucide-react';
 import { DataGrid as ReactDataGrid, Column } from 'react-data-grid';
 import { useDataStore } from '@/store/DataStore';
 import { AIParser } from '@/lib/ai-parser';
+import type { Client, Worker, Task } from '@/types';
 
 type EntityType = 'clients' | 'workers' | 'tasks';
 
@@ -26,16 +27,16 @@ export default function DataGrid({}: DataGridProps) {
   const updateWorker = useDataStore(state => state.updateWorker);
   const updateTask = useDataStore(state => state.updateTask);
 
-  const getData = () => {
+  const getData = useCallback(() => {
     switch (activeTab) {
       case 'clients': return clients || [];
       case 'workers': return workers || [];
       case 'tasks': return tasks || [];
       default: return [];
     }
-  };
+  }, [activeTab, clients, workers, tasks]);
 
-  const getColumns = (): Column<unknown>[] => {
+  const getColumns = (): Column<Client | Worker | Task>[] => {
     const baseColumns = [
       {
         key: 'actions',
@@ -62,7 +63,7 @@ export default function DataGrid({}: DataGridProps) {
       key,
       name: key,
       width: 150,
-      renderCell: ({ rowIdx, column }: { rowIdx: number; column: Column<unknown> }) => {
+      renderCell: ({ rowIdx, column }: { rowIdx: number; column: Column<Client | Worker | Task> }) => {
         const row = data[rowIdx];
         const value = ((row as unknown) as Record<string, unknown>)[column.key];
         const hasError = validationResults.some(
@@ -164,7 +165,7 @@ export default function DataGrid({}: DataGridProps) {
         String(value).toLowerCase().includes(searchLower)
       );
     });
-  }, [searchQuery, clients, workers, tasks, activeTab, getData]);
+  }, [searchQuery, getData]);
 
   const getValidationSummary = () => {
     const entityType = activeTab.slice(0, -1) as 'client' | 'worker' | 'task';
@@ -276,7 +277,7 @@ export default function DataGrid({}: DataGridProps) {
       <div className="bg-white rounded-lg border overflow-hidden">
         {filteredData.length > 0 ? (
           <ReactDataGrid
-            columns={getColumns() as any}
+            columns={getColumns()}
             rows={filteredData}
             className="rdg-light"
             style={{ height: 400 }}
@@ -294,7 +295,7 @@ export default function DataGrid({}: DataGridProps) {
         <ul className="text-sm text-gray-600 space-y-1">
           <li>&bull; Click the edit icon to modify any cell</li>
           <li>• Use the search bar for quick filtering</li>
-          <li>• Try natural language queries like "workers with JavaScript skills"</li>
+          <li>&bull; Try natural language queries like &quot;workers with JavaScript skills&quot;</li>
           <li>• Cells with validation errors are highlighted in red</li>
         </ul>
       </div>

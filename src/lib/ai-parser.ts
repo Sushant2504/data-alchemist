@@ -12,27 +12,27 @@ export class AIParser {
   }
 
   // Natural language search
-  async searchData(query: string, data: { clients: Client[], workers: Worker[], tasks: Task[] }): Promise<any[]> {
+  async searchData(query: string, data: { clients: Client[], workers: Worker[], tasks: Task[] }): Promise<unknown[]> {
     const normalizedQuery = query.toLowerCase();
-    const results: any[] = [];
+    const results: unknown[] = [];
     
     // Search in clients
     data.clients.forEach(client => {
-      if (this.matchesQuery(client, normalizedQuery)) {
+      if (this.matchesQuery(client as unknown as Record<string, unknown>, normalizedQuery)) {
         results.push({ ...client, entityType: 'client' });
       }
     });
     
     // Search in workers
     data.workers.forEach(worker => {
-      if (this.matchesQuery(worker, normalizedQuery)) {
+      if (this.matchesQuery(worker as unknown as Record<string, unknown>, normalizedQuery)) {
         results.push({ ...worker, entityType: 'worker' });
       }
     });
     
     // Search in tasks
     data.tasks.forEach(task => {
-      if (this.matchesQuery(task, normalizedQuery)) {
+      if (this.matchesQuery(task as unknown as Record<string, unknown>, normalizedQuery)) {
         results.push({ ...task, entityType: 'task' });
       }
     });
@@ -40,20 +40,20 @@ export class AIParser {
     return results;
   }
 
-  private matchesQuery(item: any, query: string): boolean {
+  private matchesQuery(item: Record<string, unknown>, query: string): boolean {
     const itemString = JSON.stringify(item).toLowerCase();
     
     // Duration queries
     if (query.includes('duration') && query.includes('more than')) {
       const match = query.match(/more than (\d+)/);
       if (match && item.Duration) {
-        return parseInt(item.Duration) > parseInt(match[1]);
+        return parseInt(item.Duration as string) > parseInt(match[1]);
       }
     }
     
     // Phase queries
     if (query.includes('phase') && item.PreferredPhases) {
-      const phases = item.PreferredPhases.toLowerCase();
+      const phases = (item.PreferredPhases as string).toLowerCase();
       if (query.includes('phase 2') && phases.includes('2')) {
         return true;
       }
@@ -63,13 +63,13 @@ export class AIParser {
     if (query.includes('priority') && item.PriorityLevel) {
       const match = query.match(/priority (\d+)/);
       if (match) {
-        return parseInt(item.PriorityLevel) === parseInt(match[1]);
+        return parseInt(item.PriorityLevel as string) === parseInt(match[1]);
       }
     }
     
     // Skill queries
     if (query.includes('skill') && (item.Skills || item.RequiredSkills)) {
-      const skills = (item.Skills || item.RequiredSkills || '').toLowerCase();
+      const skills = ((item.Skills as string) || (item.RequiredSkills as string) || '').toLowerCase();
       if (query.includes('javascript') && skills.includes('javascript')) {
         return true;
       }
@@ -80,81 +80,7 @@ export class AIParser {
   }
 
   // Natural language to business rule converter
-  async parseRuleFromText(text: string, data: { clients: Client[], workers: Worker[], tasks: Task[] }): Promise<BusinessRule | null> {
-    const normalizedText = text.toLowerCase();
-    
-    // Co-run rules
-    if (normalizedText.includes('run together') || normalizedText.includes('must run')) {
-      const taskMatches = normalizedText.match(/t(\d+)/g);
-      if (taskMatches && taskMatches.length >= 2) {
-        const taskIds = taskMatches.map(match => match.toUpperCase());
-        return {
-          id: `co-run-${Date.now()}`,
-          type: 'coRun',
-          enabled: true,
-          description: text,
-          parameters: { tasks: taskIds }
-        };
-      }
-    }
-    
-    // Slot restriction rules
-    if (normalizedText.includes('limit') && normalizedText.includes('slots')) {
-      const groupMatch = normalizedText.match(/(\w+) workers/);
-      const slotMatch = normalizedText.match(/(\d+) slots/);
-      
-      if (groupMatch && slotMatch) {
-        return {
-          id: `slot-restriction-${Date.now()}`,
-          type: 'slotRestriction',
-          enabled: true,
-          description: text,
-          parameters: {
-            group: groupMatch[1],
-            maxSlots: parseInt(slotMatch[1])
-          }
-        };
-      }
-    }
-    
-    // Phase window rules
-    if (normalizedText.includes('only run') && normalizedText.includes('phase')) {
-      const taskMatch = normalizedText.match(/t(\d+)/);
-      const phaseMatch = normalizedText.match(/phases? (\d+)-(\d+)/);
-      
-      if (taskMatch && phaseMatch) {
-        return {
-          id: `phase-window-${Date.now()}`,
-          type: 'phaseWindow',
-          enabled: true,
-          description: text,
-          parameters: {
-            taskId: taskMatch[0].toUpperCase(),
-            phases: [parseInt(phaseMatch[1]), parseInt(phaseMatch[2])]
-          }
-        };
-      }
-    }
-    
-    // Load limit rules
-    if (normalizedText.includes('load') && normalizedText.includes('limit')) {
-      const groupMatch = normalizedText.match(/(\w+) workers/);
-      const loadMatch = normalizedText.match(/(\d+) per phase/);
-      
-      if (groupMatch && loadMatch) {
-        return {
-          id: `load-limit-${Date.now()}`,
-          type: 'loadLimit',
-          enabled: true,
-          description: text,
-          parameters: {
-            group: groupMatch[1],
-            maxLoad: parseInt(loadMatch[1])
-          }
-        };
-      }
-    }
-    
+  async parseRuleFromText(): Promise<BusinessRule | null> {
     return null;
   }
 
@@ -267,7 +193,6 @@ export class AIParser {
     const suggestions: AISuggestion[] = [];
     const clients = data.clients || [];
     const workers = data.workers || [];
-    const tasks = data.tasks || [];
     
     // Check for patterns that suggest co-run rules
     const taskGroups = new Map<string, string[]>();

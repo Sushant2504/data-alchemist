@@ -16,7 +16,7 @@ export interface ValidationRule {
   id: string;
   name: string;
   description: string;
-  validate: (data: any) => ValidationResult[];
+  validate: (data: unknown) => ValidationResult[];
   aiEnhanced?: boolean;
 }
 
@@ -34,5 +34,5 @@ export interface AISuggestion {
   message: string;
   confidence: number;
   action: string;
-  data?: any;
+  data?: unknown;
 } 

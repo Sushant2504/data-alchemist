@@ -9,7 +9,7 @@ import { BusinessRule, AISuggestion } from '@/types';
 export default function RulesBuilder() {
   const [naturalLanguageRule, setNaturalLanguageRule] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<unknown[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeTab, setActiveTab] = useState<'manual' | 'natural' | 'ai'>('manual');
 
@@ -22,22 +22,21 @@ export default function RulesBuilder() {
   const updateBusinessRule = useDataStore(state => state.updateBusinessRule);
 
   useEffect(() => {
+    const generateRuleSuggestions = async () => {
+      try {
+        const aiParser = AIParser.getInstance();
+        const recommendations = await aiParser.generateRuleRecommendations({
+          clients,
+          workers,
+          tasks,
+        });
+        setSuggestions(recommendations);
+      } catch (error) {
+        console.error('Failed to generate rule suggestions:', error);
+      }
+    };
     generateRuleSuggestions();
   }, [clients, workers, tasks]);
-
-  const generateRuleSuggestions = async () => {
-    try {
-      const aiParser = AIParser.getInstance();
-      const recommendations = await aiParser.generateRuleRecommendations({
-        clients,
-        workers,
-        tasks,
-      });
-      setSuggestions(recommendations);
-    } catch (error) {
-      console.error('Failed to generate rule suggestions:', error);
-    }
-  };
 
   const handleNaturalLanguageRule = async () => {
     if (!naturalLanguageRule.trim()) return;
@@ -45,11 +44,7 @@ export default function RulesBuilder() {
     setIsProcessing(true);
     try {
       const aiParser = AIParser.getInstance();
-      const rule = await aiParser.parseRuleFromText(naturalLanguageRule, {
-        clients,
-        workers,
-        tasks,
-      });
+      const rule = await aiParser.parseRuleFromText();
 
       if (rule) {
         addBusinessRule(rule);
@@ -84,32 +79,34 @@ export default function RulesBuilder() {
     updateBusinessRule(id, { enabled });
   };
 
-  const handleApplySuggestion = (suggestion: AISuggestion) => {
-    if (suggestion.action === 'add_co_run_rule') {
+  const handleApplySuggestion = (suggestion: unknown) => {
+    const s = suggestion as AISuggestion;
+    // Apply the suggestion to the data
+    if (s.action === 'add_co_run_rule') {
       const rule: BusinessRule = {
         id: `co-run-${Date.now()}`,
         type: 'coRun',
         enabled: true,
-        description: suggestion.message,
-        parameters: { tasks: suggestion.data.tasks },
+        description: s.message,
+        parameters: { tasks: (s.data as { tasks: string[] }).tasks },
       };
       addBusinessRule(rule);
-    } else if (suggestion.action === 'add_load_limit_rule') {
+    } else if (s.action === 'add_load_limit_rule') {
       const rule: BusinessRule = {
         id: `load-limit-${Date.now()}`,
         type: 'loadLimit',
         enabled: true,
-        description: suggestion.message,
+        description: s.message,
         parameters: {
-          group: suggestion.data.group,
-          maxLoad: suggestion.data.suggestedLimit,
+          group: (s.data as { group: string }).group,
+          maxLoad: (s.data as { suggestedLimit: number }).suggestedLimit,
         },
       };
       addBusinessRule(rule);
     }
 
     // Remove the suggestion
-    setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+    setSuggestions(prev => prev.filter(sug => (sug as AISuggestion).id !== s.id));
   };
 
   const getRuleIcon = (type: string) => {
@@ -137,13 +134,13 @@ export default function RulesBuilder() {
   const getRuleParameters = (rule: BusinessRule) => {
     switch (rule.type) {
       case 'coRun':
-        return `Tasks: ${rule.parameters.tasks?.join(', ') || 'None'}`;
+        return `Tasks: ${Array.isArray(rule.parameters.tasks) ? rule.parameters.tasks.join(', ') : 'None'}`;
       case 'slotRestriction':
         return `Group: ${rule.parameters.group || 'None'}, Max Slots: ${rule.parameters.maxSlots || 'None'}`;
       case 'loadLimit':
         return `Group: ${rule.parameters.group || 'None'}, Max Load: ${rule.parameters.maxLoad || 'None'}`;
       case 'phaseWindow':
-        return `Task: ${rule.parameters.taskId || 'None'}, Phases: ${rule.parameters.phases?.join('-') || 'None'}`;
+        return `Task: ${rule.parameters.taskId || 'None'}, Phases: ${Array.isArray(rule.parameters.phases) ? rule.parameters.phases.join('-') : 'None'}`;
       default:
         return JSON.stringify(rule.parameters);
     }
@@ -162,7 +159,7 @@ export default function RulesBuilder() {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as unknown as 'manual' | 'natural' | 'ai')}
               className={`flex items-center space-x-2 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                 activeTab === tab.id
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -251,11 +248,11 @@ export default function RulesBuilder() {
               <textarea
                 value={naturalLanguageRule}
                 onChange={(e) => setNaturalLanguageRule(e.target.value)}
-                placeholder="Examples:
+                placeholder={`Examples:
 • Tasks T12 and T14 must run together
 • Limit sales workers to 3 slots per phase
 • Task T15 can only run in phases 1-3
-• Premium clients get priority 5"
+• Premium clients get priority 5`}
                 className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <button
@@ -274,19 +271,19 @@ export default function RulesBuilder() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
               <div>
                 <p className="font-medium mb-1">Co-run Rules:</p>
-                <p>"Tasks T12 and T14 must run together"</p>
+                <p>&quot;Tasks T12 and T14 must run together&quot;</p>
               </div>
               <div>
                 <p className="font-medium mb-1">Slot Restrictions:</p>
-                <p>"Limit sales workers to 3 slots per phase"</p>
+                <p>&quot;Limit sales workers to 3 slots per phase&quot;</p>
               </div>
               <div>
                 <p className="font-medium mb-1">Phase Windows:</p>
-                <p>"Task T15 can only run in phases 1-3"</p>
+                <p>&quot;Task T15 can only run in phases 1-3&quot;</p>
               </div>
               <div>
                 <p className="font-medium mb-1">Load Limits:</p>
-                <p>"Limit developers to 2 tasks per phase"</p>
+                <p>&quot;Limit developers to 2 tasks per phase&quot;</p>
               </div>
             </div>
           </div>
@@ -318,28 +315,33 @@ export default function RulesBuilder() {
                   <p className="text-sm">AI will analyze your data and suggest rules when patterns are detected.</p>
                 </div>
               ) : (
-                suggestions.map((suggestion) => (
-                  <div
-                    key={suggestion.id}
-                    className="bg-white p-4 rounded-lg border border-blue-200"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{suggestion.message}</p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Confidence: {Math.round(suggestion.confidence * 100)}%
-                        </p>
+                suggestions.map((suggestion) => {
+                  const s = suggestion as AISuggestion;
+                  return (
+                    <div
+                      key={s.id}
+                      className="bg-white p-4 rounded-lg border border-blue-200"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <Sparkles className="w-4 h-4 text-blue-600" />
+                            <span className="font-medium text-blue-900">{s.message}</span>
+                          </div>
+                          <div className="text-sm text-gray-600 mb-2">{s.type}</div>
+                          <div className="text-xs text-gray-500">Confidence: {s.confidence}</div>
+                        </div>
+                        <button
+                          onClick={() => handleApplySuggestion(s)}
+                          className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Apply</span>
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleApplySuggestion(suggestion)}
-                        className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Rule</span>
-                      </button>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -347,10 +349,9 @@ export default function RulesBuilder() {
           <div className="bg-gray-50 rounded-lg p-4">
             <h4 className="font-medium text-gray-900 mb-2">How AI Suggestions Work</h4>
             <div className="text-sm text-gray-600 space-y-2">
-              <p>• Analyzes patterns in your data to identify potential business rules</p>
-              <p>• Detects frequently co-requested tasks for co-run rules</p>
-              <p>• Identifies overloaded worker groups for load limit rules</p>
-              <p>• Suggests phase restrictions based on task and worker patterns</p>
+              <li>&bull; Use filters to focus on specific issues</li>
+              <li>&bull; Click &quot;Fix&quot; buttons for one-click corrections</li>
+              <li>&bull; Try AI suggestions for automated fixes</li>
             </div>
           </div>
         </div>

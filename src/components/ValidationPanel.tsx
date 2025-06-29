@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { AlertCircle, CheckCircle, Info, XCircle, Sparkles, Filter, Wrench } from 'lucide-react';
+import { AlertCircle, CheckCircle, Info, XCircle, Sparkles, Wrench } from 'lucide-react';
 import { ValidationResult } from '@/types';
 import { useDataStore } from '@/store/DataStore';
 import { AIParser } from '@/lib/ai-parser';
@@ -11,11 +11,11 @@ interface ValidationPanelProps {
 }
 
 export default function ValidationPanel({ results }: ValidationPanelProps) {
-  const safeResults = results || [];
+  const safeResults = useMemo(() => results || [], [results]);
   const [filter, setFilter] = useState<'all' | 'error' | 'warning' | 'info'>('all');
   const [entityFilter, setEntityFilter] = useState<'all' | 'client' | 'worker' | 'task'>('all');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<unknown[]>([]);
 
   const updateClient = useDataStore(state => state.updateClient);
   const updateWorker = useDataStore(state => state.updateWorker);
@@ -24,23 +24,24 @@ export default function ValidationPanel({ results }: ValidationPanelProps) {
   const workers = useDataStore(state => state.workers);
   const tasks = useDataStore(state => state.tasks);
 
+  const memoizedSafeResults = useMemo(() => safeResults, [safeResults]);
   const filteredResults = useMemo(() => {
-    return safeResults.filter(result => {
+    return memoizedSafeResults.filter(result => {
       const severityMatch = filter === 'all' || result.severity === filter;
       const entityMatch = entityFilter === 'all' || result.entity === entityFilter;
       return severityMatch && entityMatch;
     });
-  }, [safeResults, filter, entityFilter]);
+  }, [memoizedSafeResults, filter, entityFilter]);
 
   const summary = useMemo(() => {
     return {
-      total: safeResults.length,
-      errors: safeResults.filter(r => r.severity === 'error').length,
-      warnings: safeResults.filter(r => r.severity === 'warning').length,
-      info: safeResults.filter(r => r.severity === 'info').length,
-      fixable: safeResults.filter(r => r.fixable).length,
+      total: memoizedSafeResults.length,
+      errors: memoizedSafeResults.filter(r => r.severity === 'error').length,
+      warnings: memoizedSafeResults.filter(r => r.severity === 'warning').length,
+      info: memoizedSafeResults.filter(r => r.severity === 'info').length,
+      fixable: memoizedSafeResults.filter(r => r.fixable).length,
     };
-  }, [safeResults]);
+  }, [memoizedSafeResults]);
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
@@ -75,24 +76,25 @@ export default function ValidationPanel({ results }: ValidationPanelProps) {
     }
   };
 
-  const handleApplySuggestion = (suggestion: any) => {
+  const handleApplySuggestion = (suggestion: unknown) => {
+    const s = suggestion as { action: string; data: Record<string, unknown>; id: string };
     // Apply the suggestion to the data
-    if (suggestion.action === 'fix_priority') {
-      updateClient(suggestion.data.clientId, { PriorityLevel: suggestion.data.suggestedValue });
-    } else if (suggestion.action === 'fix_json') {
-      updateClient(suggestion.data.clientId, { AttributesJSON: suggestion.data.suggestedValue });
-    } else if (suggestion.action === 'fix_slots') {
-      updateWorker(suggestion.data.workerId, { AvailableSlots: suggestion.data.suggestedValue });
-    } else if (suggestion.action === 'fix_load') {
-      updateWorker(suggestion.data.workerId, { MaxLoadPerPhase: suggestion.data.suggestedValue });
-    } else if (suggestion.action === 'fix_duration') {
-      updateTask(suggestion.data.taskId, { Duration: suggestion.data.suggestedValue });
-    } else if (suggestion.action === 'fix_concurrent') {
-      updateTask(suggestion.data.taskId, { MaxConcurrent: suggestion.data.suggestedValue });
+    if (s.action === 'fix_priority') {
+      updateClient(s.data.clientId as string, { PriorityLevel: s.data.suggestedValue as number });
+    } else if (s.action === 'fix_json') {
+      updateClient(s.data.clientId as string, { AttributesJSON: s.data.suggestedValue as string });
+    } else if (s.action === 'fix_slots') {
+      updateWorker(s.data.workerId as string, { AvailableSlots: s.data.suggestedValue as string });
+    } else if (s.action === 'fix_load') {
+      updateWorker(s.data.workerId as string, { MaxLoadPerPhase: s.data.suggestedValue as number });
+    } else if (s.action === 'fix_duration') {
+      updateTask(s.data.taskId as string, { Duration: s.data.suggestedValue as number });
+    } else if (s.action === 'fix_concurrent') {
+      updateTask(s.data.taskId as string, { MaxConcurrent: s.data.suggestedValue as number });
     }
 
     // Remove the suggestion from the list
-    setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+    setSuggestions(prev => prev.filter(sug => (sug as { id: string }).id !== s.id));
   };
 
   const handleQuickFix = (result: ValidationResult) => {
@@ -141,7 +143,7 @@ export default function ValidationPanel({ results }: ValidationPanelProps) {
         <div className="flex space-x-2">
           <select
             value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
+            onChange={(e) => setFilter(e.target.value as unknown as 'all' | 'error' | 'warning' | 'info')}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
           >
             <option value="all">All Severities</option>
@@ -151,7 +153,7 @@ export default function ValidationPanel({ results }: ValidationPanelProps) {
           </select>
           <select
             value={entityFilter}
-            onChange={(e) => setEntityFilter(e.target.value as any)}
+            onChange={(e) => setEntityFilter(e.target.value as unknown as 'all' | 'client' | 'worker' | 'task')}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
           >
             <option value="all">All Entities</option>
@@ -177,25 +179,28 @@ export default function ValidationPanel({ results }: ValidationPanelProps) {
             <h3 className="text-lg font-medium text-gray-900">AI-Powered Suggestions</h3>
           </div>
           <div className="space-y-3">
-            {suggestions.map((suggestion) => (
-              <div key={suggestion.id} className="bg-white p-4 rounded-lg border">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">{suggestion.message}</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Confidence: {Math.round(suggestion.confidence * 100)}%
-                    </p>
+            {suggestions.map((suggestion) => {
+              const s = suggestion as { id: string; message: string; confidence: number };
+              return (
+                <div key={s.id} className="bg-white p-4 rounded-lg border">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{s.message}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Confidence: {Math.round(s.confidence * 100)}%
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleApplySuggestion(s)}
+                      className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                    >
+                      <Wrench className="w-3 h-3" />
+                      <span>Apply</span>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleApplySuggestion(suggestion)}
-                    className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  >
-                    <Wrench className="w-3 h-3" />
-                    <span>Apply</span>
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -221,7 +226,7 @@ export default function ValidationPanel({ results }: ValidationPanelProps) {
                     <h4 className="font-medium text-gray-900">{result.message}</h4>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-500 capitalize">
-                        {result.entity} • {result.type}
+                        {result.entity} &bull; {result.type}
                       </span>
                       {result.fixable && (
                         <button
@@ -273,9 +278,9 @@ export default function ValidationPanel({ results }: ValidationPanelProps) {
           <div>
             <p className="font-medium mb-1">Quick Actions:</p>
             <ul className="space-y-1">
-              <li>• Use filters to focus on specific issues</li>
-              <li>• Click "Fix" buttons for one-click corrections</li>
-              <li>• Try AI suggestions for automated fixes</li>
+              <li>&bull; Use filters to focus on specific issues</li>
+              <li>&bull; Click &quot;Fix&quot; buttons for one-click corrections</li>
+              <li>&bull; Try AI suggestions for automated fixes</li>
             </ul>
           </div>
         </div>

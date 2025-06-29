@@ -1,8 +1,7 @@
 import * as XLSX from 'xlsx';
-import { Client, Worker, Task } from '@/types';
 
 export interface ParsedFile {
-  data: any[];
+  data: unknown[];
   headers: string[];
   fileName: string;
   fileType: 'csv' | 'xlsx';
@@ -99,7 +98,7 @@ export function mapHeaders(headers: string[], entityType: 'clients' | 'workers' 
   return mappings;
 }
 
-export function parseExcelFile(file: File): Promise<ParsedFile> {
+export async function parseExcelFile(file: File): Promise<{ headers: string[]; data: Record<string, unknown>[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -121,11 +120,11 @@ export function parseExcelFile(file: File): Promise<ParsedFile> {
         }
         
         const headers = jsonData[0] as string[];
-        const rows = jsonData.slice(1) as any[][];
+        const rows = jsonData.slice(1) as unknown[][];
         
         // Convert rows to objects
         const dataObjects = rows.map(row => {
-          const obj: any = {};
+          const obj: Record<string, unknown> = {};
           headers.forEach((header, index) => {
             obj[header] = row[index] || '';
           });
@@ -134,9 +133,7 @@ export function parseExcelFile(file: File): Promise<ParsedFile> {
         
         resolve({
           data: dataObjects,
-          headers,
-          fileName: file.name,
-          fileType: file.name.endsWith('.csv') ? 'csv' : 'xlsx'
+          headers
         });
       } catch (error) {
         reject(error);
@@ -148,7 +145,7 @@ export function parseExcelFile(file: File): Promise<ParsedFile> {
   });
 }
 
-export function parseCSVFile(file: File): Promise<ParsedFile> {
+export async function parseCSVFile(file: File): Promise<{ headers: string[]; data: Record<string, unknown>[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -165,7 +162,7 @@ export function parseCSVFile(file: File): Promise<ParsedFile> {
         const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
         const dataObjects = lines.slice(1).map(line => {
           const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-          const obj: any = {};
+          const obj: Record<string, unknown> = {};
           headers.forEach((header, index) => {
             obj[header] = values[index] || '';
           });
@@ -174,9 +171,7 @@ export function parseCSVFile(file: File): Promise<ParsedFile> {
         
         resolve({
           data: dataObjects,
-          headers,
-          fileName: file.name,
-          fileType: 'csv'
+          headers
         });
       } catch (error) {
         reject(error);
@@ -206,15 +201,15 @@ export function detectEntityType(headers: string[]): 'clients' | 'workers' | 'ta
   return 'unknown';
 }
 
-export function transformData(data: any[], entityType: 'clients' | 'workers' | 'tasks'): any[] {
+export function transformData(data: unknown[], entityType: 'clients' | 'workers' | 'tasks'): Record<string, unknown>[] {
   const mappings = mapHeaders(Object.keys(data[0] || {}), entityType);
   
-  return data.map(row => {
-    const transformed: any = {};
+  const transformed: Record<string, unknown>[] = data.map(row => {
+    const transformed: Record<string, unknown> = {};
     
     mappings.forEach(mapping => {
       if (mapping.confidence > 0.5) {
-        transformed[mapping.mappedHeader] = row[mapping.originalHeader];
+        transformed[mapping.mappedHeader] = (row as Record<string, unknown>)[mapping.originalHeader];
       }
     });
     
@@ -228,4 +223,6 @@ export function transformData(data: any[], entityType: 'clients' | 'workers' | '
     
     return transformed;
   });
+  
+  return transformed;
 } 

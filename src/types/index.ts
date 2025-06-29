@@ -32,7 +32,7 @@ export interface BusinessRule {
   type: 'coRun' | 'slotRestriction' | 'loadLimit' | 'phaseWindow' | 'patternMatch' | 'precedenceOverride';
   enabled: boolean;
   description: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   priority?: number;
 }
 

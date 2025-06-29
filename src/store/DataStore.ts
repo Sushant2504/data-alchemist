@@ -41,7 +41,7 @@ export const defaultPrioritizationWeights: PrioritizationWeights = {
   skillUtilization: 70,
 };
 
-export const useDataStore = create<DataStoreState>((set, get) => ({
+export const useDataStore = create<DataStoreState>((set) => ({
   // Initial state
   clients: [],
   workers: [],

@@ -17,7 +17,7 @@ export default function FileUpload({ onValidationComplete }: FileUploadProps) {
     name: string;
     type: string;
     entityType: 'clients' | 'workers' | 'tasks' | 'unknown';
-    data: any[];
+    data: unknown[];
     headers: string[];
     status: 'uploading' | 'processing' | 'success' | 'error';
     error?: string;
@@ -41,7 +41,7 @@ export default function FileUpload({ onValidationComplete }: FileUploadProps) {
         name: string;
         type: string;
         entityType: 'clients' | 'workers' | 'tasks' | 'unknown';
-        data: any[];
+        data: unknown[];
         headers: string[];
         status: 'uploading' | 'processing' | 'success' | 'error';
         error?: string;
@@ -87,11 +87,11 @@ export default function FileUpload({ onValidationComplete }: FileUploadProps) {
 
           // Store data in global state
           if (entityType === 'clients') {
-            useDataStore.getState().setClients(transformedData as Client[]);
+            useDataStore.getState().setClients(transformedData.map(obj => obj as unknown as Client));
           } else if (entityType === 'workers') {
-            useDataStore.getState().setWorkers(transformedData as Worker[]);
+            useDataStore.getState().setWorkers(transformedData.map(obj => obj as unknown as Worker));
           } else if (entityType === 'tasks') {
-            useDataStore.getState().setTasks(transformedData as Task[]);
+            useDataStore.getState().setTasks(transformedData.map(obj => obj as unknown as Task));
           }
         } else {
           fileInfo.status = 'error';

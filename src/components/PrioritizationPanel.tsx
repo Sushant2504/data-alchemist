@@ -93,7 +93,7 @@ export default function PrioritizationPanel() {
     const preset = PRESET_PROFILES[presetKey as keyof typeof PRESET_PROFILES];
     if (preset) {
       setPrioritizationWeights(preset.weights);
-      setActiveProfile(presetKey);
+      setActiveProfile(presetKey as unknown as string);
     }
   };
 
@@ -224,11 +224,6 @@ export default function PrioritizationPanel() {
                     value={value}
                     onChange={(e) => handleWeightChange(key as keyof PrioritizationWeights, parseInt(e.target.value))}
                     className={`w-full h-2 rounded-lg appearance-none cursor-pointer bg-gradient-to-r ${getWeightColor(key)}`}
-                    style={{
-                      background: `linear-gradient(to right, var(--tw-gradient-stops))`,
-                      '--tw-gradient-from': 'rgb(229 231 235)',
-                      '--tw-gradient-to': 'rgb(229 231 235)',
-                    } as any}
                   />
                   <div className="flex justify-between text-xs text-gray-500 mt-1">
                     <span>0%</span>

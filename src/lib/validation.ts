@@ -9,7 +9,7 @@ export interface ValidationContext {
 // Core validation rules
 export const validationRules = {
   // 1. Missing required columns
-  missingRequiredColumns: (data: any[], entityType: string): ValidationResult[] => {
+  missingRequiredColumns: (data: Record<string, unknown>[], entityType: string): ValidationResult[] => {
     const requiredColumns = {
       clients: ['ClientID', 'ClientName', 'PriorityLevel', 'RequestedTaskIDs', 'GroupTag', 'AttributesJSON'],
       workers: ['WorkerID', 'WorkerName', 'Skills', 'AvailableSlots', 'MaxLoadPerPhase', 'WorkerGroup', 'QualificationLevel'],
@@ -31,7 +31,7 @@ export const validationRules = {
   },
 
   // 2. Duplicate IDs
-  duplicateIDs: (data: any[], entityType: string): ValidationResult[] => {
+  duplicateIDs: (data: Record<string, unknown>[], entityType: string): ValidationResult[] => {
     const idField = entityType === 'clients' ? 'ClientID' : entityType === 'workers' ? 'WorkerID' : 'TaskID';
     const ids = data.map(row => row[idField]).filter(Boolean);
     const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
@@ -40,24 +40,24 @@ export const validationRules = {
       id: `duplicate-${id}`,
       type: 'duplicate_id',
       severity: 'error',
-      message: `Duplicate ${idField}: ${id}`,
-      entity: entityType as 'client' | 'worker' | 'task',
-      entityId: id,
+      message: `Duplicate ID found: ${id}`,
+      entity: entityType.slice(0, -1) as 'client' | 'worker' | 'task',
+      entityId: id as string,
       field: idField,
       fixable: true,
-      suggestion: `Remove duplicate entries or rename one of the ${idField}s`
+      suggestion: `Remove or change the duplicate ID (${id})`,
     }));
   },
 
   // 3. Malformed lists
-  malformedLists: (data: any[], entityType: string): ValidationResult[] => {
+  malformedLists: (data: Record<string, unknown>[], entityType: string): ValidationResult[] => {
     const results: ValidationResult[] = [];
     
     data.forEach((row, index) => {
       // Check AvailableSlots for workers
       if (entityType === 'workers' && row.AvailableSlots) {
         try {
-          const slots = JSON.parse(row.AvailableSlots);
+          const slots = JSON.parse(row.AvailableSlots as string);
           if (!Array.isArray(slots) || !slots.every(slot => typeof slot === 'number')) {
             results.push({
               id: `malformed-slots-${index}`,
@@ -65,7 +65,7 @@ export const validationRules = {
               severity: 'error',
               message: `AvailableSlots must be a JSON array of numbers`,
               entity: 'worker',
-              entityId: row.WorkerID,
+              entityId: row.WorkerID as string,
               field: 'AvailableSlots',
               fixable: true,
               suggestion: 'Format as JSON array, e.g., [1, 3, 5]'
@@ -78,7 +78,7 @@ export const validationRules = {
             severity: 'error',
             message: `Invalid JSON in AvailableSlots`,
             entity: 'worker',
-            entityId: row.WorkerID,
+            entityId: row.WorkerID as string,
             field: 'AvailableSlots',
             fixable: true,
             suggestion: 'Format as JSON array, e.g., [1, 3, 5]'
@@ -104,7 +104,7 @@ export const validationRules = {
               severity: 'warning',
               message: `Empty items in ${field} list`,
               entity: entityType as 'client' | 'worker' | 'task',
-              entityId: row[entityType === 'clients' ? 'ClientID' : entityType === 'workers' ? 'WorkerID' : 'TaskID'],
+              entityId: row[entityType === 'clients' ? 'ClientID' : entityType === 'workers' ? 'WorkerID' : 'TaskID'] as string,
               field,
               fixable: true,
               suggestion: 'Remove empty items from the list'
@@ -118,13 +118,13 @@ export const validationRules = {
   },
 
   // 4. Out-of-range values
-  outOfRangeValues: (data: any[], entityType: string): ValidationResult[] => {
+  outOfRangeValues: (data: Record<string, unknown>[], entityType: string): ValidationResult[] => {
     const results: ValidationResult[] = [];
     
     data.forEach((row, index) => {
       // PriorityLevel (1-5)
       if (entityType === 'clients' && row.PriorityLevel) {
-        const priority = parseInt(row.PriorityLevel);
+        const priority = parseInt(row.PriorityLevel as string);
         if (isNaN(priority) || priority < 1 || priority > 5) {
           results.push({
             id: `priority-range-${index}`,
@@ -132,7 +132,7 @@ export const validationRules = {
             severity: 'error',
             message: `PriorityLevel must be between 1 and 5`,
             entity: 'client',
-            entityId: row.ClientID,
+            entityId: row.ClientID as string,
             field: 'PriorityLevel',
             fixable: true,
             suggestion: 'Set PriorityLevel to a value between 1 and 5'
@@ -142,7 +142,7 @@ export const validationRules = {
       
       // Duration (>= 1)
       if (entityType === 'tasks' && row.Duration) {
-        const duration = parseInt(row.Duration);
+        const duration = parseInt(row.Duration as string);
         if (isNaN(duration) || duration < 1) {
           results.push({
             id: `duration-range-${index}`,
@@ -150,7 +150,7 @@ export const validationRules = {
             severity: 'error',
             message: `Duration must be at least 1`,
             entity: 'task',
-            entityId: row.TaskID,
+            entityId: row.TaskID as string,
             field: 'Duration',
             fixable: true,
             suggestion: 'Set Duration to a value of 1 or greater'
@@ -160,7 +160,7 @@ export const validationRules = {
       
       // MaxLoadPerPhase (>= 1)
       if (entityType === 'workers' && row.MaxLoadPerPhase) {
-        const load = parseInt(row.MaxLoadPerPhase);
+        const load = parseInt(row.MaxLoadPerPhase as string);
         if (isNaN(load) || load < 1) {
           results.push({
             id: `load-range-${index}`,
@@ -168,7 +168,7 @@ export const validationRules = {
             severity: 'error',
             message: `MaxLoadPerPhase must be at least 1`,
             entity: 'worker',
-            entityId: row.WorkerID,
+            entityId: row.WorkerID as string,
             field: 'MaxLoadPerPhase',
             fixable: true,
             suggestion: 'Set MaxLoadPerPhase to a value of 1 or greater'
@@ -181,13 +181,13 @@ export const validationRules = {
   },
 
   // 5. Broken JSON
-  brokenJSON: (data: any[], entityType: string): ValidationResult[] => {
+  brokenJSON: (data: Record<string, unknown>[], entityType: string): ValidationResult[] => {
     const results: ValidationResult[] = [];
     
     data.forEach((row, index) => {
       if (entityType === 'clients' && row.AttributesJSON) {
         try {
-          JSON.parse(row.AttributesJSON);
+          JSON.parse(row.AttributesJSON as string);
         } catch {
           results.push({
             id: `broken-json-${index}`,
@@ -195,7 +195,7 @@ export const validationRules = {
             severity: 'error',
             message: `Invalid JSON in AttributesJSON`,
             entity: 'client',
-            entityId: row.ClientID,
+            entityId: row.ClientID as string,
             field: 'AttributesJSON',
             fixable: true,
             suggestion: 'Fix JSON syntax or use {} for empty attributes'
@@ -280,7 +280,7 @@ export const validationRules = {
     context.workers.forEach(worker => {
       if (worker.AvailableSlots) {
         try {
-          const slots = JSON.parse(worker.AvailableSlots);
+          const slots = JSON.parse(worker.AvailableSlots as string);
           if (Array.isArray(slots) && slots.length < worker.MaxLoadPerPhase) {
             results.push({
               id: `overloaded-${worker.WorkerID}`,
@@ -288,7 +288,7 @@ export const validationRules = {
               severity: 'warning',
               message: `Worker has fewer available slots (${slots.length}) than max load (${worker.MaxLoadPerPhase})`,
               entity: 'worker',
-              entityId: worker.WorkerID,
+              entityId: worker.WorkerID as string,
               field: 'AvailableSlots',
               fixable: true,
               suggestion: 'Increase AvailableSlots or decrease MaxLoadPerPhase'
@@ -334,7 +334,7 @@ export async function runAIValidation(context: ValidationContext): Promise<Valid
         const longTasks = context.tasks.filter(t => t.Duration > 3);
         const shortPhaseWorkers = context.workers.filter(w => {
           try {
-            const slots = JSON.parse(w.AvailableSlots);
+            const slots = JSON.parse(w.AvailableSlots as string);
             return Array.isArray(slots) && slots.length < 3;
           } catch {
             return false;
@@ -376,23 +376,23 @@ export async function validateData(context: ValidationContext): Promise<Validati
   const results: ValidationResult[] = [];
   
   // Run core validations
-  results.push(...validationRules.missingRequiredColumns(context.clients, 'clients'));
-  results.push(...validationRules.missingRequiredColumns(context.workers, 'workers'));
-  results.push(...validationRules.missingRequiredColumns(context.tasks, 'tasks'));
+  results.push(...validationRules.missingRequiredColumns(context.clients as unknown as Record<string, unknown>[], 'clients'));
+  results.push(...validationRules.missingRequiredColumns(context.workers as unknown as Record<string, unknown>[], 'workers'));
+  results.push(...validationRules.missingRequiredColumns(context.tasks as unknown as Record<string, unknown>[], 'tasks'));
   
-  results.push(...validationRules.duplicateIDs(context.clients, 'clients'));
-  results.push(...validationRules.duplicateIDs(context.workers, 'workers'));
-  results.push(...validationRules.duplicateIDs(context.tasks, 'tasks'));
+  results.push(...validationRules.duplicateIDs(context.clients as unknown as Record<string, unknown>[], 'clients'));
+  results.push(...validationRules.duplicateIDs(context.workers as unknown as Record<string, unknown>[], 'workers'));
+  results.push(...validationRules.duplicateIDs(context.tasks as unknown as Record<string, unknown>[], 'tasks'));
   
-  results.push(...validationRules.malformedLists(context.clients, 'clients'));
-  results.push(...validationRules.malformedLists(context.workers, 'workers'));
-  results.push(...validationRules.malformedLists(context.tasks, 'tasks'));
+  results.push(...validationRules.malformedLists(context.clients as unknown as Record<string, unknown>[], 'clients'));
+  results.push(...validationRules.malformedLists(context.workers as unknown as Record<string, unknown>[], 'workers'));
+  results.push(...validationRules.malformedLists(context.tasks as unknown as Record<string, unknown>[], 'tasks'));
   
-  results.push(...validationRules.outOfRangeValues(context.clients, 'clients'));
-  results.push(...validationRules.outOfRangeValues(context.workers, 'workers'));
-  results.push(...validationRules.outOfRangeValues(context.tasks, 'tasks'));
+  results.push(...validationRules.outOfRangeValues(context.clients as unknown as Record<string, unknown>[], 'clients'));
+  results.push(...validationRules.outOfRangeValues(context.workers as unknown as Record<string, unknown>[], 'workers'));
+  results.push(...validationRules.outOfRangeValues(context.tasks as unknown as Record<string, unknown>[], 'tasks'));
   
-  results.push(...validationRules.brokenJSON(context.clients, 'clients'));
+  results.push(...validationRules.brokenJSON(context.clients as unknown as Record<string, unknown>[], 'clients'));
   
   // Cross-reference validations
   results.push(...validationRules.unknownReferences(context));
