@@ -1,5 +1,9 @@
 # 🧪 Data Alchemist: AI-Powered Resource Allocation Configurator
 
+[![Live Demo](https://img.shields.io/badge/Live%20App-Vercel-blue?logo=vercel)](https://data-alchemist-1cnk.vercel.app/)
+
+Live deployment: [https://data-alchemist-1cnk.vercel.app/](https://data-alchemist-1cnk.vercel.app/)
+
 Data Alchemist is a sophisticated Next.js web application that transforms messy spreadsheet data into clean, validated, and AI-optimized resource allocation configurations. Built for non-technical users who need to manage complex resource allocation scenarios.
 
 ## ✨ Features
