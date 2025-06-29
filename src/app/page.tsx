@@ -44,7 +44,7 @@ export default function DataAlchemist() {
     setIsProcessing(true);
     try {
       // Export cleaned data as separate CSV files
-      const exportCSV = (data: any[], filename: string) => {
+      const exportCSV = (data: Record<string, unknown>[], filename: string) => {
         if (!data || data.length === 0) return;
         
         const headers = Object.keys(data[0] || {});
@@ -65,9 +65,9 @@ export default function DataAlchemist() {
       };
 
       // Export data files
-      exportCSV(clients, 'clients-cleaned.csv');
-      exportCSV(workers, 'workers-cleaned.csv');
-      exportCSV(tasks, 'tasks-cleaned.csv');
+      exportCSV(clients.map(c => ({ ...c })), 'clients-cleaned.csv');
+      exportCSV(workers.map(w => ({ ...w })), 'workers-cleaned.csv');
+      exportCSV(tasks.map(t => ({ ...t })), 'tasks-cleaned.csv');
 
       // Export rules and configuration
       const rulesData = {
@@ -204,7 +204,7 @@ export default function DataAlchemist() {
                 return (
                   <motion.button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
+                    onClick={() => setActiveTab(tab.id as 'upload' | 'data' | 'validation' | 'rules' | 'priorities')}
                     whileHover={{ scale: 1.08, backgroundColor: 'rgba(59,130,246,0.08)' }}
                     whileTap={{ scale: 0.97 }}
                     animate={isActive ? { scale: 1.12, backgroundColor: 'rgba(59,130,246,0.18)' } : { scale: 1, backgroundColor: 'rgba(255,255,255,0)' }}

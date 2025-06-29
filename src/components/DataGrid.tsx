@@ -2,20 +2,19 @@
 
 import { useState, useMemo } from 'react';
 import { Search, Edit3, Save, X, Sparkles, Filter } from 'lucide-react';
-import { DataGrid as ReactDataGrid, Column, Row } from 'react-data-grid';
+import { DataGrid as ReactDataGrid, Column } from 'react-data-grid';
 import { useDataStore } from '@/store/DataStore';
 import { AIParser } from '@/lib/ai-parser';
-import { Client, Worker, Task, ValidationResult } from '@/types';
 
 type EntityType = 'clients' | 'workers' | 'tasks';
 
-interface DataGridProps {}
+type DataGridProps = Record<string, never>;
 
 export default function DataGrid({}: DataGridProps) {
   const [activeTab, setActiveTab] = useState<EntityType>('clients');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<unknown[]>([]);
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; columnKey: string } | null>(null);
   const [editValue, setEditValue] = useState('');
 
@@ -36,7 +35,7 @@ export default function DataGrid({}: DataGridProps) {
     }
   };
 
-  const getColumns = (): Column<any>[] => {
+  const getColumns = (): Column<unknown>[] => {
     const baseColumns = [
       {
         key: 'actions',
@@ -63,12 +62,12 @@ export default function DataGrid({}: DataGridProps) {
       key,
       name: key,
       width: 150,
-      renderCell: ({ rowIdx, column }: { rowIdx: number; column: Column<any> }) => {
+      renderCell: ({ rowIdx, column }: { rowIdx: number; column: Column<unknown> }) => {
         const row = data[rowIdx];
-        const value = (row as any)[column.key];
+        const value = ((row as unknown) as Record<string, unknown>)[column.key];
         const hasError = validationResults.some(
           v => v.entity === activeTab.slice(0, -1) && 
-               v.entityId === (row as any)[activeTab === 'clients' ? 'ClientID' : activeTab === 'workers' ? 'WorkerID' : 'TaskID'] &&
+               v.entityId === ((row as unknown) as Record<string, unknown>)[activeTab === 'clients' ? 'ClientID' : activeTab === 'workers' ? 'WorkerID' : 'TaskID'] &&
                v.field === column.key
         );
 
@@ -114,21 +113,21 @@ export default function DataGrid({}: DataGridProps) {
     const row = data[rowIndex];
     const key = columnKey || Object.keys(row)[0];
     setEditingCell({ rowIndex, columnKey: key });
-    setEditValue(String((row as any)[key] || ''));
+    setEditValue(String(((row as unknown) as Record<string, unknown>)[key] || ''));
   };
 
   const handleSave = (rowIndex: number, columnKey: string) => {
     const data = getData();
     const row = data[rowIndex];
-    const id = (row as any)[activeTab === 'clients' ? 'ClientID' : activeTab === 'workers' ? 'WorkerID' : 'TaskID'];
+    const id = ((row as unknown) as Record<string, unknown>)[activeTab === 'clients' ? 'ClientID' : activeTab === 'workers' ? 'WorkerID' : 'TaskID'];
     
     // Update data in store
     if (activeTab === 'clients') {
-      updateClient(id, { [columnKey]: editValue });
+      updateClient(id as string, { [columnKey]: editValue });
     } else if (activeTab === 'workers') {
-      updateWorker(id, { [columnKey]: editValue });
+      updateWorker(id as string, { [columnKey]: editValue });
     } else if (activeTab === 'tasks') {
-      updateTask(id, { [columnKey]: editValue });
+      updateTask(id as string, { [columnKey]: editValue });
     }
 
     setEditingCell(null);
@@ -165,7 +164,7 @@ export default function DataGrid({}: DataGridProps) {
         String(value).toLowerCase().includes(searchLower)
       );
     });
-  }, [activeTab, searchQuery, clients, workers, tasks]);
+  }, [searchQuery, clients, workers, tasks, activeTab, getData]);
 
   const getValidationSummary = () => {
     const entityType = activeTab.slice(0, -1) as 'client' | 'worker' | 'task';
@@ -257,11 +256,11 @@ export default function DataGrid({}: DataGridProps) {
               <div key={index} className="bg-white p-3 rounded border">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-medium">{result[activeTab === 'clients' ? 'ClientName' : activeTab === 'workers' ? 'WorkerName' : 'TaskName']}</span>
-                    <span className="text-sm text-gray-500 ml-2">({result.entityType})</span>
+                    <span className="font-medium">{((result as Record<string, unknown>)[activeTab === 'clients' ? 'ClientName' : activeTab === 'workers' ? 'WorkerName' : 'TaskName']) as string}</span>
+                    <span className="text-sm text-gray-500 ml-2">{((result as Record<string, unknown>).entityType) as string}</span>
                   </div>
                   <span className="text-sm text-gray-600">
-                    {Object.keys(result).filter(key => !['entityType', 'ClientName', 'WorkerName', 'TaskName'].includes(key)).length} fields
+                    {Object.keys(result as Record<string, unknown>).filter(key => !['entityType', 'ClientName', 'WorkerName', 'TaskName'].includes(key)).length} fields
                   </span>
                 </div>
               </div>
@@ -277,7 +276,7 @@ export default function DataGrid({}: DataGridProps) {
       <div className="bg-white rounded-lg border overflow-hidden">
         {filteredData.length > 0 ? (
           <ReactDataGrid
-            columns={getColumns()}
+            columns={getColumns() as any}
             rows={filteredData}
             className="rdg-light"
             style={{ height: 400 }}
@@ -293,7 +292,7 @@ export default function DataGrid({}: DataGridProps) {
       <div className="bg-gray-50 rounded-lg p-4">
         <h4 className="font-medium text-gray-900 mb-2">How to use the Data Grid</h4>
         <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Click the edit icon to modify any cell</li>
+          <li>&bull; Click the edit icon to modify any cell</li>
           <li>• Use the search bar for quick filtering</li>
           <li>• Try natural language queries like "workers with JavaScript skills"</li>
           <li>• Cells with validation errors are highlighted in red</li>
